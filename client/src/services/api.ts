@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
+const BASE_URL = 'https://focusnow-production.up.railway.app/api';
 
 export async function apiFetch<T = unknown>(
   endpoint: string,
