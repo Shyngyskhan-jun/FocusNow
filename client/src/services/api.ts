@@ -1,4 +1,4 @@
-const BASE_URL = 'https://focusnow-production.up.railway.app/api';
+const BASE_URL = 'https://focusnow-production-e639.up.railway.app/api';
 
 export async function apiFetch<T = unknown>(
   endpoint: string,
@@ -14,7 +14,7 @@ export async function apiFetch<T = unknown>(
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-
+  console.log("ПОЛНЫЙ URL ЗАПРОСА:", `${BASE_URL}${endpoint}`);
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,

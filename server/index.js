@@ -22,20 +22,27 @@ const allowedOrigins = [
     process.env.CLIENT_URL,    // Твой фронтенд на Vercel
 ].filter(Boolean);             // Удаляет пустые значения, если CLIENT_URL не задан
 
-app.use(cors({
-    origin: (origin, callback) => {
-        // Разрешаем запросы без origin (например, мобильные приложения или Postman)
-        if (!origin) {
-            return callback(null, true);
-        }
+// app.use(cors({
+//     origin: (origin, callback) => {
+//         // Разрешаем запросы без origin (например, мобильные приложения или Postman)
+//         if (!origin) {
+//             return callback(null, true);
+//         }
 
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.log('Blocked by CORS:', origin); // Поможет увидеть в логах Railway, если кто-то еще заблокирован
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+//         if (allowedOrigins.includes(origin)) {
+//             callback(null, true);
+//         } else {
+//             console.log('Blocked by CORS:', origin); // Поможет увидеть в логах Railway, если кто-то еще заблокирован
+//             callback(new Error('Not allowed by CORS'));
+//         }
+//     },
+//     credentials: true,
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization']
+// }));
+
+app.use(cors({
+    origin: true, // Автоматически разрешает тот origin, который делает запрос
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
