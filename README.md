@@ -35,3 +35,5 @@
 Backend: Railway (переменные окружения из .env)
 Database: Railway PostgreSQL (DATABASE_URL)
 Frontend: Vercel или Railway
+
+developed by me as a team/collaboration project
