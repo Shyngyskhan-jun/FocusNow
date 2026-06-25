@@ -12,56 +12,58 @@ import analyticsRoutes from './routes/analytics.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
+let initializationError = null;
 
-// Список разрешенных адресов
-const allowedOrigins = [
-    'http://localhost:5173',   // Локальная разработка (Vite)
-    'http://localhost',        // Android Capacitor (иногда)
-    'https://localhost',       // Android/iOS Capacitor (основной)
-    'capacitor://localhost',  // Стандарт Capacitor
-    process.env.CLIENT_URL,    // Твой фронтенд на Vercel
-].filter(Boolean);             // Удаляет пустые значения, если CLIENT_URL не задан
-
-// app.use(cors({
-//     origin: (origin, callback) => {
-//         // Разрешаем запросы без origin (например, мобильные приложения или Postman)
-//         if (!origin) {
-//             return callback(null, true);
-//         }
-
-//         if (allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             console.log('Blocked by CORS:', origin); // Поможет увидеть в логах Railway, если кто-то еще заблокирован
-//             callback(new Error('Not allowed by CORS'));
-//         }
-//     },
-//     credentials: true,
-//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//     allowedHeaders: ['Content-Type', 'Authorization']
-// }));
-
+// Настройка CORS (с максимальным доступом для отладки)
 app.use(cors({
-    origin: true, // Автоматически разрешает тот origin, который делает запрос
+    origin: true, 
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 app.options('*', cors());
 
 app.use(express.json());
 
-// Маршруты
-app.use('/api/auth', authRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/focus', focusRoutes);
-app.use('/api/behavior', behaviorRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/analytics', analyticsRoutes);
+// Оборачиваем подключение роутов в try/catch. 
+// Если внутри файлов routes/auth.js или других файлов при старте падает база данных, 
+// этот блок перехватит ошибку и не даст серверу умереть.
+try {
+    // Маршруты
+    app.use('/api/auth', authRoutes);
+    app.use('/api/tasks', tasksRoutes);
+    app.use('/api/focus', focusRoutes);
+    app.use('/api/behavior', behaviorRoutes);
+    app.use('/api/user', userRoutes);
+    app.use('/api/analytics', analyticsRoutes);
+    
+    // Тестовый роут, чтобы проверить жив ли сервер вообще
+    app.get('/', (req, res) => {
+        res.send('Server is alive and running!');
+    });
+
+} catch (error) {
+    initializationError = error;
+    console.error("Критическая ошибка при инициализации роутов/БД:", error);
+}
 
 // Обработка ошибок (должна быть последней)
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Перехватчик фатальной ошибки старта
+app.all('*', (req, res, next) => {
+    if (initializationError) {
+        return res.status(500).json({
+            message: "Сервер упал при старте приложения внутри модулей!",
+            error: initializationError.message,
+            stack: initializationError.stack
+        });
+    }
+    next();
+});
+
+// Запуск сервера
+const PORT = process.env.PORT || 8080; // Если Railway дает свой порт, берем его, иначе 8080
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
