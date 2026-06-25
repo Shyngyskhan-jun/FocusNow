@@ -1,4 +1,4 @@
-const BASE_URL = 'https://focusnow-production-e639.up.railway.app/api';
+const BASE_URL = 'https://focusnow-production-e6e0.up.railway.app/api';
 
 export async function apiFetch<T = unknown>(
   endpoint: string,
