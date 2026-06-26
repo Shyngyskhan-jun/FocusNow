@@ -1,73 +1,57 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/landing.css";
-
+import { LangSwitcher } from "../components/LangSwitcher";
+import { useTranslation } from 'react-i18next';
 type Theme = "light" | "dark";
 
 interface LandingPageProps {
   theme: Theme;
   onToggleTheme: () => void;
 }
-
 const FEATURES = [
   {
     icon: "📋",
-    title: "Управление задачами",
-    items: [
-      "Создавай задачи и ставь дедлайны",
-      "Разбивай большое дело на конкретные шаги",
-      "Не теряй приоритеты и держи порядок",
-    ],
+    titleKey: "features.tasks.title",
+    itemKeys: ["features.tasks.item0", "features.tasks.item1", "features.tasks.item2"],
   },
   {
     icon: "⏱",
-    title: "Фокус-сессии",
-    items: [
-      "Работай по Pomodoro-таймеру",
-      "Отслеживай время концентрации",
-      "Делай паузы в правильный момент",
-    ],
+    titleKey: "features.focus.title",
+    itemKeys: ["features.focus.item0", "features.focus.item1", "features.focus.item2"],
   },
   {
     icon: "📊",
-    title: "Аналитика",
-    items: [
-      "Смотри реальную продуктивность",
-      "Понимай, когда и почему прокрастинируешь",
-      "Принимай решения на основе данных",
-    ],
+    titleKey: "features.analytics.title",
+    itemKeys: ["features.analytics.item0", "features.analytics.item1", "features.analytics.item2"],
   },
   {
     icon: "🎮",
-    title: "Геймификация",
-    items: [
-      "Зарабатывай XP за сессии",
-      "Держи ежедневные стрики",
-      "Повышай свой уровень",
-    ],
+    titleKey: "features.gamification.title",
+    itemKeys: ["features.gamification.item0", "features.gamification.item1", "features.gamification.item2"],
   },
 ] as const;
 
 const PROBLEMS = [
-  "Ты постоянно откладываешь задачи",
-  "Теряешь время в соцсетях",
-  "Не понимаешь, с чего начать",
-  "Быстро устаёшь и бросаешь дела",
+  "problems.item0",
+  "problems.item1",
+  "problems.item2",
+  "problems.item3",
 ] as const;
 
 const DIFFERENTIATORS = [
-  { icon: "🔍", text: "Не просто таймер — анализ твоего поведения" },
-  { icon: "🧘", text: "Учитывает состояние: устал, нормально, в потоке" },
-  { icon: "🧩", text: "Помогает понять причины прокрастинации" },
-  { icon: "📈", text: "Мотивирует через прогресс, уровни и стрики" },
+  { icon: "🔍", key: "diff.item0" },
+  { icon: "🧘", key: "diff.item1" },
+  { icon: "🧩", key: "diff.item2" },
+  { icon: "📈", key: "diff.item3" },
 ] as const;
 
 const HOW_STEPS = [
-  { num: "01", label: "Создаёшь задачу" },
-  { num: "02", label: "Выбираешь своё состояние" },
-  { num: "03", label: "Запускаешь фокус-сессию" },
-  { num: "04", label: "Получаешь статистику" },
-  { num: "05", label: "Улучшаешь результат" },
+  { num: "01", key: "steps.item0" },
+  { num: "02", key: "steps.item1" },
+  { num: "03", key: "steps.item2" },
+  { num: "04", key: "steps.item3" },
+  { num: "05", key: "steps.item4" },
 ] as const;
 
 function useReveal<T extends HTMLElement>() {
@@ -112,6 +96,7 @@ const Reveal: React.FC<RevealProps> = ({ className = "", children }) => {
 };
 
 const LandingPage: React.FC<LandingPageProps> = ({ theme, onToggleTheme }) => {
+  const { t } = useTranslation()
   const navigate = useNavigate();
   const featuresRef = useRef<HTMLElement>(null);
   const currentYear = new Date().getFullYear();
@@ -141,11 +126,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ theme, onToggleTheme }) => {
               <span className="lp-theme-toggle__icon" aria-hidden="true">
                 {isDark ? "☀️" : "🌙"}
               </span>
-              <span>{isDark ? "Светлая тема" : "Тёмная тема"}</span>
+              <span>{t(`theme.${isDark ? 'light' : 'dark'}`)}</span>
             </button>
-
+             <LangSwitcher></LangSwitcher>
             <button className="btn btn--outline btn--sm" onClick={goToAuth} type="button">
-              Войти
+              {t('auth.login')}
             </button>
           </div>
         </div>
@@ -155,169 +140,175 @@ const LandingPage: React.FC<LandingPageProps> = ({ theme, onToggleTheme }) => {
         <div className="lp-hero__body container">
           <div className="lp-hero__badge">
             <span className="lp-hero__badge-dot" aria-hidden="true" />
-            Скажи нет прокрастинации!
+            {t('Moto')}
           </div>
 
           <h1 className="lp-hero__title">
-            FocusNow —{" "}
-            <span className="text-accent">перестань откладывать задачи</span>
-            <br />
-            уже сегодня
+            {t('main_text','Focusnow - перестань откладывать задачи уже сегодня')}
+
           </h1>
 
           <p className="lp-hero__subtitle">
-            Приложение, которое помогает сосредоточиться, управлять задачами и
-            бороться с прокрастинацией с помощью аналитики и геймификации.
+            {t('desc',' Приложение, которое помогает сосредоточиться, управлять задачами и бороться с прокрастинацией с помощью аналитики и геймификации.')}
           </p>
 
           <div className="lp-hero__actions">
             <button className="btn btn--primary btn--lg" onClick={goToAuth} type="button">
-              🚀&nbsp; Начать
+              🚀&nbsp; {t('begin','Начать')}
             </button>
             <button
               className="btn btn--ghost btn--lg"
               onClick={scrollToFeatures}
               type="button"
             >
-              📊&nbsp; Посмотреть возможности
+              📊&nbsp; {t('Oppr','Посмотреть возможности')}
             </button>
           </div>
 
           <div className="lp-hero__stats" aria-label="Ключевые цифры">
             <div className="lp-stat">
               <span className="lp-stat__value">4</span>
-              <span className="lp-stat__label">инструмента</span>
+              <span className="lp-stat__label">{t('tools','инструмента')}</span>
             </div>
             <div className="lp-stat__sep" aria-hidden="true" />
             <div className="lp-stat">
-              <span className="lp-stat__value">Полностью</span>
-              <span className="lp-stat__label">бесплатно</span>
+              <span className="lp-stat__value">{t('completely','Полностью')}</span>
+              <span className="lp-stat__label">{t('free','бесплатно')}</span>
             </div>
             <div className="lp-stat__sep" aria-hidden="true" />
             <div className="lp-stat">
               <span className="lp-stat__value">∞</span>
-              <span className="lp-stat__label">мотивации</span>
+              <span className="lp-stat__label">{t('motivation','мотивации')}</span>
             </div>
           </div>
         </div>
       </section>
 
       <section className="lp-section lp-problem">
-        <div className="container">
-          <Reveal>
-            <p className="section-label">Ты не один</p>
-            <h2 className="section-title">Знакомо?</h2>
-            <ul className="lp-problem__list" aria-label="Типичные проблемы">
-              {PROBLEMS.map((text) => (
-                <li key={text} className="lp-problem__item">
-                  <span className="lp-problem__cross" aria-hidden="true">
-                    ✗
-                  </span>
-                  {text}
-                </li>
-              ))}
-            </ul>
-            <p className="lp-problem__note">
-              Если хотя бы один пункт — про тебя, FocusNow создан именно для тебя.
-            </p>
-          </Reveal>
-        </div>
-      </section>
+  <div className="container">
+    <Reveal>
+      {/* Теперь используем чистый вызов без дефолтных значений в коде, так как все в JSON */}
+      <p className="section-label">{t('alone')}</p>
+      <h2 className="section-title">{t('familiar')}</h2>
+      
+      <ul className="lp-problem__list" aria-label={t('familiar')}>
+        {PROBLEMS.map((probKey) => (
+          <li key={probKey} className="lp-problem__item">
+            <span className="lp-problem__cross" aria-hidden="true">
+              ✗
+            </span>
+            {/* Рендерим текст проблемы по её ключу */}
+            {t(probKey)}
+          </li>
+        ))}
+      </ul>
+      <p className="lp-problem__note">
+        {t('problems.note')}
+      </p>
+    </Reveal>
+  </div>
+</section>
 
-      <section className="lp-section lp-features" ref={featuresRef}>
-        <div className="container">
-          <Reveal>
-            <p className="section-label">Что внутри</p>
-            <h2 className="section-title">FocusNow помогает взять контроль</h2>
-          </Reveal>
+<section className="lp-section lp-features" ref={featuresRef}>
+  <div className="container">
+    <Reveal>
+      <p className="section-label">{t('features.label')}</p>
+      <h2 className="section-title">{t('features.title')}</h2>
+    </Reveal>
 
-          <div className="lp-features__grid">
-            {FEATURES.map((feature) => (
-              <Reveal key={feature.title} className="lp-feature-card">
-                <div className="lp-feature-card__icon" aria-hidden="true">
-                  {feature.icon}
-                </div>
-                <h3 className="lp-feature-card__title">{feature.title}</h3>
-                <ul className="lp-feature-card__list">
-                  {feature.items.map((item) => (
-                    <li key={item} className="lp-feature-card__item">
-                      <span aria-hidden="true">→</span> {item}
-                    </li>
-                  ))}
-                </ul>
-              </Reveal>
-            ))}
+    <div className="lp-features__grid">
+      {FEATURES.map((feature) => (
+        /* В качестве key для React используем уникальное имя ключа заголовка */
+        <Reveal key={feature.titleKey} className="lp-feature-card">
+          <div className="lp-feature-card__icon" aria-hidden="true">
+            {feature.icon}
           </div>
-        </div>
-      </section>
+          {/* Переводим заголовок карточки фичи */}
+          <h3 className="lp-feature-card__title">{t(feature.titleKey)}</h3>
+          
+          <ul className="lp-feature-card__list">
+            {feature.itemKeys.map((itemKey) => (
+              <li key={itemKey} className="lp-feature-card__item">
+                <span aria-hidden="true">→</span> {t(itemKey)} {/* Переводим каждый пункт */}
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      ))}
+    </div>
+  </div>
+</section>
 
-      <section className="lp-section lp-diff">
-        <div className="container">
-          <Reveal>
-            <p className="section-label">Почему мы</p>
-            <h2 className="section-title">Чем мы отличаемся</h2>
-            <div className="lp-diff__grid">
-              {DIFFERENTIATORS.map((d) => (
-                <div key={d.text} className="lp-diff__item">
-                  <span className="lp-diff__icon" aria-hidden="true">
-                    {d.icon}
-                  </span>
-                  <p className="lp-diff__text">{d.text}</p>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </div>
-      </section>
+<section className="lp-section lp-diff">
+  <div className="container">
+    <Reveal>
+      <p className="section-label">{t('diff.label')}</p>
+      <h2 className="section-title">{t('diff.title')}</h2>
+      <div className="lp-diff__grid">
+        {DIFFERENTIATORS.map((d) => (
+          <div key={d.key} className="lp-diff__item">
+            <span className="lp-diff__icon" aria-hidden="true">
+              {d.icon}
+            </span>
+            {/* Переводим отличительные особенности */}
+            <p className="lp-diff__text">{t(d.key)}</p>
+          </div>
+        ))}
+      </div>
+    </Reveal>
+  </div>
+</section>
 
-      <section className="lp-section lp-how">
-        <div className="container">
-          <Reveal>
-            <p className="section-label">Просто</p>
-            <h2 className="section-title">Как это работает</h2>
-            <ol className="lp-how__steps" aria-label="Шаги работы с приложением">
-              {HOW_STEPS.map((step, index) => (
-                <li key={step.num} className="lp-how__step">
-                  <span className="lp-how__num" aria-label={`Шаг ${index + 1}`}>
-                    {step.num}
-                  </span>
-                  <span className="lp-how__label">{step.label}</span>
-                  {index < HOW_STEPS.length - 1 && (
-                    <span className="lp-how__arrow" aria-hidden="true">
-                      →
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </Reveal>
-        </div>
-      </section>
+<section className="lp-section lp-how">
+  <div className="container">
+    <Reveal>
+      <p className="section-label">{t('how.label')}</p>
+      <h2 className="section-title">{t('how.title')}</h2>
+      <ol className="lp-how__steps" aria-label={t('how.title')}>
+        {HOW_STEPS.map((step, index) => (
+          <li key={step.num} className="lp-how__step">
+            <span className="lp-how__num" aria-label={`Step ${index + 1}`}>
+              {step.num}
+            </span>
+            {/* Переводим название шага инструкции */}
+            <span className="lp-how__label">{t(step.key)}</span>
+            {index < HOW_STEPS.length - 1 && (
+              <span className="lp-how__arrow" aria-hidden="true">
+                →
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </Reveal>
+  </div>
+</section>
 
       <section className="lp-section lp-cta">
-        <div className="container">
-          <Reveal>
-            <h2 className="lp-cta__title">
-              Начни прямо сейчас и возьми контроль
-              <br />
-              <span className="text-accent">над своим временем</span>
-            </h2>
-            <p className="lp-cta__sub">Бесплатно. Ничего лишнего.</p>
-            <button className="btn btn--primary btn--xl" onClick={goToAuth} type="button">
-              Начать
-            </button>
-          </Reveal>
-        </div>
-      </section>
+  <div className="container">
+    <Reveal>
+      <h2 className="lp-cta__title">
+        {t('cta.title_part1')}
+        <br />
+        <span className="text-accent">{t('cta.title_accent')}</span>
+      </h2>
+      <p className="lp-cta__sub">{t('cta.sub')}</p>
+      <button className="btn btn--primary btn--xl" onClick={goToAuth} type="button">
+        {t('cta.btn')}
+      </button>
+    </Reveal>
+  </div>
+</section>
 
-      <footer className="lp-footer">
-        <div className="container lp-footer__inner">
-          <span className="lp-footer__logo">FocusNow</span>
-          <span className="lp-footer__copy">
-            © {currentYear} FocusNow. Сделано с фокусом.
-          </span>
-        </div>
-      </footer>
+<footer className="lp-footer">
+  <div className="container lp-footer__inner">
+    <span className="lp-footer__logo">FocusNow</span>
+    <span className="lp-footer__copy">
+      {/* Пробрасываем переменную текущего года прямо в перевод */}
+      {t('footer.copy', { year: currentYear })}
+    </span>
+  </div>
+</footer>
     </div>
   );
 };

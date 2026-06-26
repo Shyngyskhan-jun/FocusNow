@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import "../styles/settings.css";
+import { LangSwitcher } from '../components/LangSwitcher';
 
 export interface SettingsPageProps {
   toggleTheme: () => void;
@@ -56,6 +58,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   theme,
   onLogout,
 }) => {
+  const { t } = useTranslation();
+
   const [dayReminder, setDayReminder] = useState(() =>
     getStoredBool(STORAGE_KEYS.dayReminder, true)
   );
@@ -67,7 +71,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   const [showConfirm, setShowConfirm] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: FeedbackType;
-    text: string;
+    textKey: string;
   } | null>(null);
 
   const reminderTimeoutRef = useRef<number | null>(null);
@@ -75,12 +79,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   const isDark = theme === "dark";
   const notificationSupported = canUseNotifications();
 
-  const pushFeedback = useCallback((type: FeedbackType, text: string) => {
-    setFeedback({ type, text });
-  }, []);
-
-  const clearFeedback = useCallback(() => {
-    setFeedback(null);
+  const pushFeedback = useCallback((type: FeedbackType, textKey: string) => {
+    setFeedback({ type, textKey });
   }, []);
 
   useEffect(() => {
@@ -115,8 +115,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
       reminderTimeoutRef.current = window.setTimeout(() => {
         if (Notification.permission === "granted") {
-          new Notification("Начало дня", {
-            body: "Пора начать продуктивный день 💪",
+          new Notification(t('settings.notifications.day_start_title'), {
+            body: t('settings.notifications.day_start_body'),
           });
         }
 
@@ -132,11 +132,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         reminderTimeoutRef.current = null;
       }
     };
-  }, [dayReminder, notificationSupported]);
+  }, [dayReminder, notificationSupported, t]);
 
   const ensureNotificationPermission = useCallback(async (): Promise<boolean> => {
     if (!notificationSupported) {
-      pushFeedback("error", "Уведомления не поддерживаются в этом браузере.");
+      pushFeedback("error", "settings.feedback.not_supported");
       return false;
     }
 
@@ -144,7 +144,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      pushFeedback("error", "Чтобы включить уведомления, нужно разрешить их в браузере.");
+      pushFeedback("error", "settings.feedback.permission_denied");
       return false;
     }
 
@@ -158,12 +158,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       const allowed = await ensureNotificationPermission();
       if (!allowed) return;
       setDayReminder(true);
-      pushFeedback("success", "Напоминание о начале дня включено.");
+      pushFeedback("success", "settings.feedback.day_reminder_on");
       return;
     }
 
     setDayReminder(false);
-    pushFeedback("success", "Напоминание о начале дня выключено.");
+    pushFeedback("success", "settings.feedback.day_reminder_off");
   }, [dayReminder, ensureNotificationPermission, pushFeedback]);
 
   const handleTogglePomodoro = useCallback(async () => {
@@ -173,24 +173,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       const allowed = await ensureNotificationPermission();
       if (!allowed) return;
       setPomodoroNotify(true);
-      pushFeedback("success", "Уведомления о завершении фокуса включены.");
+      pushFeedback("success", "settings.feedback.pomodoro_on");
       return;
     }
 
     setPomodoroNotify(false);
-    pushFeedback("success", "Уведомления о завершении фокуса выключены.");
+    pushFeedback("success", "settings.feedback.pomodoro_off");
   }, [pomodoroNotify, ensureNotificationPermission, pushFeedback]);
 
   const handleTestNotification = useCallback(async () => {
     const allowed = await ensureNotificationPermission();
     if (!allowed) return;
 
-    new Notification("Проверка уведомления", {
-      body: "Уведомления работают нормально ✅",
+    new Notification(t('settings.notifications.test_title'), {
+      body: t('settings.notifications.test_body'),
     });
 
-    pushFeedback("success", "Тестовое уведомление отправлено.");
-  }, [ensureNotificationPermission, pushFeedback]);
+    pushFeedback("success", "settings.feedback.test_sent");
+  }, [ensureNotificationPermission, pushFeedback, t]);
 
   const handleLogout = useCallback(() => {
     setShowConfirm(false);
@@ -201,15 +201,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     <section className="settings-page">
       <header className="settings-header">
         <div>
-          <p className="section-label">Настройки</p>
-          <h1 className="settings-title">Управление приложением</h1>
+          <p className="section-label">{t('settings.header.label')}</p>
+          <h1 className="settings-title">{t('settings.header.title')}</h1>
           <p className="settings-subtitle">
-            Внешний вид, уведомления и выход из аккаунта
+            {t('settings.header.subtitle')}
           </p>
         </div>
 
         <div className="settings-header__badge">
-          {isDark ? "🌙 Тёмная тема" : "☀️ Светлая тема"}
+          {isDark ? `🌙 ${t('settings.theme.dark_badge')}` : `☀️ ${t('settings.theme.light_badge')}`}
         </div>
       </header>
 
@@ -222,20 +222,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           }
           role="alert"
         >
-          {feedback.text}
+          {t(feedback.textKey)}
         </div>
       )}
 
       <section className="settings-section">
-        <h3 className="section-title">Внешний вид</h3>
+        <h3 className="section-title">{t('settings.sections.appearance')}</h3>
 
         <div className="settings-card card">
           <SettingRow
-            title="Тема оформления"
+            title={t('settings.theme.title')}
             description={
               isDark
-                ? "Сейчас используется тёмная тема"
-                : "Сейчас используется светлая тема"
+                ? t('settings.theme.desc_dark')
+                : t('settings.theme.desc_light')
             }
           >
             <button
@@ -244,25 +244,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               onClick={toggleTheme}
               aria-label={
                 isDark
-                  ? "Переключить на светлую тему"
-                  : "Переключить на тёмную тему"
+                  ? t('settings.theme.aria_to_light')
+                  : t('settings.theme.aria_to_dark')
               }
             >
-              {isDark ? "☀️ Светлая" : "🌙 Тёмная"}
+              {isDark ? `☀️ ${t('settings.theme.btn_light')}` : `🌙 ${t('settings.theme.btn_dark')}`}
             </button>
           </SettingRow>
         </div>
       </section>
 
       <section className="settings-section">
-        <h3 className="section-title">Уведомления</h3>
+        <h3 className="section-title">{t('settings.sections.notifications')}</h3>
 
         <div className="settings-card card settings-list">
           <SettingRow
-            title="Напоминание о начале дня"
-            description="Уведомление каждый день в 8:30"
+            title={t('settings.reminder.day_title')}
+            description={t('settings.reminder.day_desc')}
           >
-            <label className="toggle-switch" aria-label="Напоминание о начале дня">
+            <label className="toggle-switch" aria-label={t('settings.reminder.day_title')}>
               <input
                 className="toggle-input sr-only"
                 type="checkbox"
@@ -276,10 +276,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           </SettingRow>
 
           <SettingRow
-            title="Окончание фокус-сессии"
-            description="Звуковой сигнал и уведомление, когда таймер завершён"
+            title={t('settings.reminder.focus_title')}
+            description={t('settings.reminder.focus_desc')}
           >
-            <label className="toggle-switch" aria-label="Уведомления о завершении фокус-сессии">
+            <label className="toggle-switch" aria-label={t('settings.reminder.focus_title')}>
               <input
                 className="toggle-input sr-only"
                 type="checkbox"
@@ -300,36 +300,39 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 void handleTestNotification();
               }}
             >
-              🔔 Проверить уведомление
+              🔔 {t('settings.reminder.btn_test')}
             </button>
           </div>
 
           {!notificationSupported && (
             <p className="settings-note">
-              Этот браузер не поддерживает уведомления.
+              {t('settings.notifications.not_supported_note')}
             </p>
           )}
         </div>
       </section>
 
       <section className="settings-section">
-        <h3 className="section-title">Дополнительно</h3>
+        <h3 className="section-title">{t('settings.sections.additional')}</h3>
 
         <div className="settings-card card settings-list">
-          <SettingRow title="Язык интерфейса" description="Русский">
-            <span className="setting-static-value">RU</span>
+          <SettingRow 
+            title={t('settings.lang.title')} 
+            description={t('settings.lang.current')}
+          >
+            <LangSwitcher />
           </SettingRow>
 
           <SettingRow
-            title="Выход из аккаунта"
-            description="Завершить текущую сессию"
+            title={t('settings.logout.title')}
+            description={t('settings.logout.desc')}
           >
             <button
               type="button"
               onClick={() => setShowConfirm(true)}
               className="btn btn-danger"
             >
-              Выйти
+              {t('settings.logout.btn')}
             </button>
           </SettingRow>
         </div>
@@ -338,8 +341,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       {showConfirm && (
         <div className="modal-overlay">
           <div className="modal card">
-            <h3>Подтверждение</h3>
-            <p>Ты точно хочешь выйти из аккаунта?</p>
+            <h3>{t('settings.confirm.title')}</h3>
+            <p>{t('settings.confirm.text')}</p>
 
             <div className="modal-actions">
               <button
@@ -347,7 +350,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 className="btn btn--outline"
                 onClick={() => setShowConfirm(false)}
               >
-                Отмена
+                {t('settings.confirm.btn_cancel')}
               </button>
 
               <button
@@ -355,7 +358,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 className="btn btn-danger"
                 onClick={handleLogout}
               >
-                Выйти
+                {t('settings.confirm.btn_confirm')}
               </button>
             </div>
           </div>

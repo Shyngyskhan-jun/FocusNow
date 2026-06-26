@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../services/api';
 import '../styles/analysis.css';
-//самая сложная страница емае
+
 interface Task {
   id: string;
   title?: string;
@@ -72,28 +73,28 @@ const isTaskOverdue = (task: Task, today: Date): boolean => {
   return date.getTime() < startOfDay(today).getTime();
 };
 
-const formatTime = (minutes: number): string => {
+const formatTime = (minutes: number, hStr: string, mStr: string): string => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
 
-  if (h && m) return `${h} ч ${m} мин`;
-  if (h) return `${h} ч`;
-  return `${m} мин`;
+  if (h && m) return `${h} ${hStr} ${m} ${mStr}`;
+  if (h) return `${h} ${hStr}`;
+  return `${m} ${mStr}`;
 };
 
-const getGreeting = (): string => {
+const getGreetingKey = (): string => {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'Доброе утро';
-  if (hour >= 12 && hour < 18) return 'Добрый день';
-  if (hour >= 18 && hour < 23) return 'Добрый вечер';
-  return 'Доброй ночи';
+  if (hour >= 5 && hour < 12) return 'greeting.morning';
+  if (hour >= 12 && hour < 18) return 'greeting.afternoon';
+  if (hour >= 18 && hour < 23) return 'greeting.evening';
+  return 'greeting.night';
 };
 
-const getWeekDayLabel = (date: Date): string =>
-  new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
+const getWeekDayLabel = (date: Date, lang: string): string =>
+  new Intl.DateTimeFormat(lang, { weekday: 'short' }).format(date);
 
-const getShortDateLabel = (date: Date): string =>
-  new Intl.DateTimeFormat('ru-RU', {
+const getShortDateLabel = (date: Date, lang: string): string =>
+  new Intl.DateTimeFormat(lang, {
     day: '2-digit',
     month: '2-digit',
   }).format(date);
@@ -152,63 +153,37 @@ const getPeakHour = (tasks: Task[]): string | null => {
   return `${String(bestHour).padStart(2, '0')}:00–${String(bestHour).padStart(2, '0')}:59`;
 };
 
-const buildCoachMessage = (params: {
+const getCoachMessageKeys = (params: {
   overdue: number;
   active: number;
   completedToday: number;
   focusMinutesToday: number;
   streak: number;
-}): CoachMessage => {
+}) => {
   const { overdue, active, completedToday, focusMinutesToday, streak } = params;
 
   if (overdue >= 3) {
-    return {
-      title: 'Сейчас тебя тормозит перегруз',
-      text:
-        'У тебя накопилось слишком много просрочки. Не пытайся закрыть всё сразу: выбери одну задачу, разбей её на 3 шага и начни с первого шага на 10–15 минут.',
-    };
+    return { titleKey: 'coach.overdue.title', textKey: 'coach.overdue.text' };
   }
-
   if (active >= 6 && focusMinutesToday < 45) {
-    return {
-      title: 'Слишком много задач — слишком мало фокуса',
-      text:
-        'Похоже, список слишком длинный, а фокус-сессий мало. Оставь 1–3 задачи на сегодня, остальные перенеси. Так мозг меньше саботирует старт.',
-    };
+    return { titleKey: 'coach.heavy_load.title', textKey: 'coach.heavy_load.text' };
   }
-
   if (completedToday === 0) {
-    return {
-      title: 'Ноль выполненных задач сегодня — нужен лёгкий старт',
-      text:
-        'Начни с самой простой задачи. Не с “важной”, а с той, которую реально закрыть быстро. После первого завершения прокрастинация обычно заметно падает.',
-    };
+    return { titleKey: 'coach.zero_completed.title', textKey: 'coach.zero_completed.text' };
   }
-
   if (focusMinutesToday < 60) {
-    return {
-      title: 'Нужно чуть больше фокус-циклов',
-      text:
-        'У тебя уже есть движение, но для стабильного прогресса не хватает времени в фокусе. Попробуй ещё 1–2 коротких цикла без отвлечений.',
-    };
+    return { titleKey: 'coach.low_focus.title', textKey: 'coach.low_focus.text' };
   }
-
   if (streak >= 3) {
-    return {
-      title: 'Хороший ритм уже есть',
-      text:
-        'Ты держишь серию несколько дней подряд. Главное сейчас — не ломать темп: один короткий фокус-цикл в день лучше, чем идеальный план, который не запускается.',
-    };
+    return { titleKey: 'coach.streak.title', textKey: 'coach.streak.text' };
   }
-
-  return {
-    title: 'Нормальный день, но есть куда усилить ритм',
-    text:
-      'Держи ставку на маленькие шаги, короткие циклы и один понятный приоритет. Так проще не застревать на старте.',
-  };
+  return { titleKey: 'coach.default.title', textKey: 'coach.default.text' };
 };
 
 const AnalysisPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
+
   const [state, setState] = useState<AnalysisState>({
     tasks: [],
     focusStats: [],
@@ -240,7 +215,7 @@ const AnalysisPage: React.FC = () => {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: 'Не удалось загрузить данные для анализа',
+          error: t('analysis.error'),
         }));
       }
     };
@@ -250,7 +225,7 @@ const AnalysisPage: React.FC = () => {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [t]);
 
   const analysis = useMemo(() => {
     const today = new Date();
@@ -287,13 +262,18 @@ const AnalysisPage: React.FC = () => {
       return isSameDay(new Date(task.updated_at), today);
     }).length;
 
-    const coach = buildCoachMessage({
+    const { titleKey, textKey } = getCoachMessageKeys({
       overdue: overdueTasks,
       active: activeTasks,
       completedToday,
       focusMinutesToday,
       streak,
     });
+
+    const coach: CoachMessage = {
+      title: t(titleKey),
+      text: t(textKey),
+    };
 
     const riskScore = Math.min(
       100,
@@ -311,27 +291,27 @@ const AnalysisPage: React.FC = () => {
     const reasons: string[] = [];
 
     if (overdueTasks > 0) {
-      reasons.push('Есть просроченные задачи, и они давят на старт');
+      reasons.push(t('reason.overdue'));
     }
     if (activeTasks >= 6) {
-      reasons.push('Слишком длинный список задач перегружает внимание');
+      reasons.push(t('reason.too_many_tasks'));
     }
     if (focusMinutesToday < 45) {
-      reasons.push('Сегодня пока мало времени в фокусе');
+      reasons.push(t('reason.low_focus'));
     }
     if (streak === 0) {
-      reasons.push('Нет стабильной серии дней подряд');
+      reasons.push(t('reason.no_streak'));
     }
 
     if (!reasons.length) {
-      reasons.push('Сейчас нагрузка выглядит умеренной');
+      reasons.push(t('reason.moderate_load'));
     }
 
     const recommendations = [
-      'Выбери одну задачу на ближайшие 15 минут.',
-      'Разбей её на 3 очень маленьких шага.',
-      'Запусти короткий Pomodoro без лишних вкладок.',
-      'После цикла отметь результат и сделай паузу на 2–3 минуты.',
+      t('recommendation.step_1'),
+      t('recommendation.step_2'),
+      t('recommendation.step_3'),
+      t('recommendation.step_4'),
     ];
 
     return {
@@ -351,7 +331,7 @@ const AnalysisPage: React.FC = () => {
       reasons,
       recommendations,
     };
-  }, [state.focusStats, state.tasks]);
+  }, [state.focusStats, state.tasks, t]);
 
   const weeklyBars = useMemo(() => {
     const now = new Date();
@@ -377,36 +357,35 @@ const AnalysisPage: React.FC = () => {
       );
 
       return {
-        label: getWeekDayLabel(date),
-        dateLabel: getShortDateLabel(date),
+        label: getWeekDayLabel(date, currentLang),
+        dateLabel: getShortDateLabel(date, currentLang),
         value,
         percent,
       };
     });
-  }, [state.focusStats]);
+  }, [state.focusStats, currentLang]);
 
   if (state.loading) {
-    return <p className="empty-state">Загрузка анализа...</p>;
+    return <p className="empty-state">{t('analysis.loading')}</p>;
   }
 
   return (
     <section className="analysis-page container">
       <div className="analysis-hero card">
         <div>
-          <span className="section-label">AI analysis</span>
-          <h1>{getGreeting()}, это твой анализ продуктивности</h1>
+          <span className="section-label">{t('analysis.hero.label')}</span>
+          <h1>{t('analysis.hero.title', { greeting: t(getGreetingKey()) })}</h1>
           <p className="analysis-hero__text">
-            Страница смотрит на задачи, фокус и прогресс, чтобы подсказать, где ты
-            буксуешь и что сделать прямо сейчас без лишней воды.
+            {t('analysis.hero.text')}
           </p>
         </div>
 
         <div className="analysis-hero__actions">
           <Link to="/tasks" className="btn btn--primary">
-            Перейти к задачам
+            {t('analysis.hero.btn_tasks')}
           </Link>
           <Link to="/focus" className="btn btn--outline">
-            Запустить фокус
+            {t('analysis.hero.btn_focus')}
           </Link>
         </div>
       </div>
@@ -416,24 +395,24 @@ const AnalysisPage: React.FC = () => {
       <div className="analysis-metrics">
         <article className="analysis-metric card">
           <span className="analysis-metric__value">{analysis.completionRate}%</span>
-          <p>выполнено из всех задач</p>
+          <p>{t('analysis.metric.completion_rate')}</p>
         </article>
 
         <article className="analysis-metric card">
           <span className="analysis-metric__value">{analysis.overdueTasks}</span>
-          <p>просрочено</p>
+          <p>{t('analysis.metric.overdue')}</p>
         </article>
 
         <article className="analysis-metric card">
           <span className="analysis-metric__value">
-            {formatTime(analysis.focusMinutesToday)}
+            {formatTime(analysis.focusMinutesToday, t('time.hours_short'), t('time.minutes_short'))}
           </span>
-          <p>в фокусе сегодня</p>
+          <p>{t('analysis.metric.focus_today')}</p>
         </article>
 
         <article className="analysis-metric card">
           <span className="analysis-metric__value">{analysis.streak}</span>
-          <p>дней подряд</p>
+          <p>{t('analysis.metric.streak')}</p>
         </article>
       </div>
 
@@ -442,12 +421,12 @@ const AnalysisPage: React.FC = () => {
           <section className="card analysis-coach">
             <div className="analysis-coach__top">
               <div>
-                <span className="section-label">AI assistant</span>
+                <span className="section-label">{t('analysis.coach.label')}</span>
                 <h2>{analysis.coach.title}</h2>
               </div>
 
               <div className={`analysis-risk analysis-risk--${analysis.riskLevel}`}>
-                Риск: {analysis.riskLevel === 'high' ? 'Высокий' : analysis.riskLevel === 'medium' ? 'Средний' : 'Низкий'}
+                {t('analysis.coach.risk', { level: t(`analysis.risk.${analysis.riskLevel}`) })}
               </div>
             </div>
 
@@ -465,10 +444,10 @@ const AnalysisPage: React.FC = () => {
           <section className="card analysis-chart">
             <div className="analysis-section-head">
               <div>
-                <span className="section-label">7 дней</span>
-                <h2>Фокус за неделю</h2>
+                <span className="section-label">{t('analysis.chart.label')}</span>
+                <h2>{t('analysis.chart.title')}</h2>
               </div>
-              <p>Где у тебя был реальный режим, а где проседал темп.</p>
+              <p>{t('analysis.chart.text')}</p>
             </div>
 
             <div className="analysis-bars">
@@ -490,7 +469,7 @@ const AnalysisPage: React.FC = () => {
                   </div>
 
                   <div className="analysis-bar-row__value">
-                    {formatTime(bar.value)}
+                    {formatTime(bar.value, t('time.hours_short'), t('time.minutes_short'))}
                   </div>
                 </div>
               ))}
@@ -500,10 +479,10 @@ const AnalysisPage: React.FC = () => {
           <section className="card analysis-patterns">
             <div className="analysis-section-head">
               <div>
-                <span className="section-label">Слабые места</span>
-                <h2>Что мешает сейчас</h2>
+                <span className="section-label">{t('analysis.patterns.label')}</span>
+                <h2>{t('analysis.patterns.title')}</h2>
               </div>
-              <p>Эти сигналы собраны из задач, фокуса и текущей нагрузки.</p>
+              <p>{t('analysis.patterns.text')}</p>
             </div>
 
             <div className="analysis-pills">
@@ -518,62 +497,62 @@ const AnalysisPage: React.FC = () => {
 
         <aside className="analysis-side">
           <section className="card analysis-side-card">
-            <span className="section-label">Сводка</span>
-            <h3>Текущие цифры</h3>
+            <span className="section-label">{t('analysis.summary.label')}</span>
+            <h3>{t('analysis.summary.title')}</h3>
 
             <div className="analysis-side-list">
               <div className="analysis-side-item">
-                <span>Активные задачи</span>
+                <span>{t('analysis.summary.active_tasks')}</span>
                 <strong>{analysis.activeTasks}</strong>
               </div>
 
               <div className="analysis-side-item">
-                <span>Выполненные задачи</span>
+                <span>{t('analysis.summary.completed_tasks')}</span>
                 <strong>{analysis.completedTasks}</strong>
               </div>
 
               <div className="analysis-side-item">
-                <span>Фокус за неделю</span>
-                <strong>{formatTime(analysis.focusMinutesWeek)}</strong>
+                <span>{t('analysis.summary.focus_week')}</span>
+                <strong>{formatTime(analysis.focusMinutesWeek, t('time.hours_short'), t('time.minutes_short'))}</strong>
               </div>
 
               <div className="analysis-side-item">
-                <span>Прогресс цели на сегодня</span>
+                <span>{t('analysis.summary.goal_progress')}</span>
                 <strong>{analysis.dailyGoalProgress}%</strong>
               </div>
 
               <div className="analysis-side-item">
-                <span>Лучший час активности</span>
-                <strong>{analysis.peakHour ?? 'Пока мало данных'}</strong>
+                <span>{t('analysis.summary.peak_hour')}</span>
+                <strong>{analysis.peakHour ?? t('analysis.summary.no_data')}</strong>
               </div>
             </div>
           </section>
 
           <section className="card analysis-side-card analysis-today-plan">
-            <span className="section-label">План на сейчас</span>
-            <h3>Против прокрастинации</h3>
+            <span className="section-label">{t('analysis.plan.label')}</span>
+            <h3>{t('analysis.plan.title')}</h3>
 
             <div className="analysis-plan">
               <div className="analysis-plan__item">
-                1. Оставь только одну главную задачу.
+                {t('analysis.plan.step_1')}
               </div>
               <div className="analysis-plan__item">
-                2. Поставь таймер на 15 минут.
+                {t('analysis.plan.step_2')}
               </div>
               <div className="analysis-plan__item">
-                3. После цикла закрой вкладку с отвлечениями.
+                {t('analysis.plan.step_3')}
               </div>
               <div className="analysis-plan__item">
-                4. Отметь результат в задачах и продолжай.
+                {t('analysis.plan.step_4')}
               </div>
             </div>
 
             <div className="analysis-side-actions">
               <Link to="/tasks" className="btn btn--primary btn--block">
-                Открыть задачи
+                {t('analysis.plan.btn_open_tasks')}
               </Link>
               <Link to="/focus" className="btn btn--ghost btn--block">
-                Начать таймер
+                {t('analysis.plan.btn_start_timer')}
               </Link>
             </div>
           </section>

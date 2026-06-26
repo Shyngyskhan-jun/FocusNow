@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useStatistics } from "../hooks/useStatistics";
 import { formatMinutes } from "../utils/formatTime";
 import { getDateKey } from "../utils/formatDate";
@@ -6,6 +7,9 @@ import type { BestResult } from "../types/stats";
 import "../styles/stats.css";
 
 const StatsPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language; // Передаем 'ru-RU' или 'en-US' динамически в форматирование дат
+
   const { daily, dailyMap, isLoading, currentStreak, todayMinutes, activeDays, bestDay } =
     useStatistics();
 
@@ -17,11 +21,11 @@ const StatsPage: React.FC = () => {
     });
     return {
       weekLabels: days.map((d) =>
-        d.toLocaleDateString("ru-RU", { weekday: "short" })
+        d.toLocaleDateString(currentLang, { weekday: "short" })
       ),
       weekData: days.map((d) => dailyMap.get(getDateKey(d)) ?? 0),
     };
-  }, [dailyMap]);
+  }, [dailyMap, currentLang]);
 
   const bestResults: BestResult[] = useMemo(
     () =>
@@ -30,14 +34,14 @@ const StatsPage: React.FC = () => {
         .slice(0, 3)
         .map((d, i) => ({
           id: String(i),
-          date: d.date.toLocaleDateString("ru-RU", {
+          date: d.date.toLocaleDateString(currentLang, {
             day: "numeric",
             month: "long",
             year: "numeric",
           }),
           durationMinutes: d.minutes,
         })),
-    [daily]
+    [daily, currentLang]
   );
 
   const totalWeekMinutes = useMemo(
@@ -51,7 +55,7 @@ const StatsPage: React.FC = () => {
   if (isLoading) {
     return (
       <section className="stats-page">
-        <p className="empty-state">Анализируем вашу продуктивность...</p>
+        <p className="empty-state">{t("stats.loading")}</p>
       </section>
     );
   }
@@ -60,14 +64,14 @@ const StatsPage: React.FC = () => {
     <section className="stats-page">
       <header className="stats-header">
         <div>
-          <p className="section-label">Аналитика</p>
-          <h1 className="stats-title">Статистика</h1>
-          <p className="stats-subtitle">Анализируй свою продуктивность</p>
+          <p className="section-label">{t("stats.label")}</p>
+          <h1 className="stats-title">{t("stats.title")}</h1>
+          <p className="stats-subtitle">{t("stats.subtitle")}</p>
         </div>
         <div className="stats-header__badge">
           {currentStreak > 0
-            ? `🔥 ${currentStreak} дней подряд`
-            : "Начни серию сегодня"}
+            ? t("stats.streak_active", { count: currentStreak })
+            : t("stats.streak_inactive")}
         </div>
       </header>
 
@@ -75,23 +79,23 @@ const StatsPage: React.FC = () => {
         <div className="stats-overview__row">
           <div className="stats-overview__item">
             <span className="stats-overview__value">{formatMinutes(todayMinutes)}</span>
-            <span className="stats-overview__label">сегодня в фокусе</span>
+            <span className="stats-overview__label">{t("stats.today_focus")}</span>
           </div>
           <div className="stats-overview__item">
             <span className="stats-overview__value">{activeDays}</span>
-            <span className="stats-overview__label">активных дней</span>
+            <span className="stats-overview__label">{t("stats.active_days")}</span>
           </div>
           <div className="stats-overview__item">
             <span className="stats-overview__value">{formatMinutes(bestDay)}</span>
-            <span className="stats-overview__label">лучший день</span>
+            <span className="stats-overview__label">{t("stats.best_day")}</span>
           </div>
         </div>
       </div>
 
       <div className="card week-stats-card">
         <div className="card-head">
-          <h3 className="section-title">Последние 7 дней</h3>
-          <span className="badge">Фокус по дням</span>
+          <h3 className="section-title">{t("stats.last_7_days")}</h3>
+          <span className="badge">{t("stats.focus_by_days")}</span>
         </div>
 
         <div className="chart-container">
@@ -114,11 +118,11 @@ const StatsPage: React.FC = () => {
 
         <div className="stats-summary">
           <div className="summary-item">
-            <span className="summary-label">За неделю:</span>
+            <span className="summary-label">{t("stats.total_week")}</span>
             <span className="summary-value">{formatMinutes(totalWeekMinutes)}</span>
           </div>
           <div className="summary-item">
-            <span className="summary-label">В среднем:</span>
+            <span className="summary-label">{t("stats.avg_week")}</span>
             <span className="summary-value">{formatMinutes(avgWeekMinutes)}</span>
           </div>
         </div>
@@ -128,16 +132,16 @@ const StatsPage: React.FC = () => {
         <div className="card streak-card">
           <div className="streak-icon">🔥</div>
           <div className="streak-number">{currentStreak}</div>
-          <div className="streak-label">дней подряд</div>
+          <div className="streak-label">{t("stats.streak_card_label")}</div>
           <div className="streak-subtext">
-            {currentStreak > 0 ? "Отличный темп!" : "Начни серию сегодня!"}
+            {currentStreak > 0 ? t("stats.streak_tempo") : t("stats.streak_start_today")}
           </div>
         </div>
 
         <div className="card best-results-card">
           <div className="card-head">
-            <h3 className="section-title">Лучшие дни</h3>
-            <span className="badge">Топ 3</span>
+            <h3 className="section-title">{t("stats.best_days_title")}</h3>
+            <span className="badge">{t("stats.top_3")}</span>
           </div>
           {bestResults.length > 0 ? (
             <ul className="results-list">
@@ -154,7 +158,7 @@ const StatsPage: React.FC = () => {
               ))}
             </ul>
           ) : (
-            <p className="empty-state">Здесь появятся ваши рекорды</p>
+            <p className="empty-state">{t("stats.no_records")}</p>
           )}
         </div>
       </div>

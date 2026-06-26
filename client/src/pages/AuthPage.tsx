@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../services/api";
 import "../styles/auth.css";
+import { useTranslation } from "react-i18next";
 
 type Theme = "light" | "dark";
 
@@ -19,7 +20,7 @@ interface AuthResponse {
 
 const AuthPage: React.FC<AuthPageProps> = ({ onLogin, theme, onToggleTheme }) => {
   const navigate = useNavigate();
-
+  const { t } = useTranslation()
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -108,23 +109,21 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, theme, onToggleTheme }) =>
           aria-pressed={isDark}
         >
           <span aria-hidden="true">{isDark ? "☀️" : "🌙"}</span>
-          <span>{isDark ? "Светлая" : "Тёмная"}</span>
+          <span>{t(`theme.${isDark ? 'light' : 'dark'}`)}</span>
         </button>
       </header>
 
       <div className="auth-card">
         <div className="auth-card__eyebrow">
-          {isLoginMode ? "Вход в аккаунт" : "Создание аккаунта"}
+          {t(isLoginMode ? 'auth.title_login' : 'auth.title_register')}
         </div>
 
         <header className="auth-card__header">
           <h1 className="auth-card__title">
-            {isLoginMode ? "Добро пожаловать" : "Создай аккаунт"}
+            {t(isLoginMode ? 'auth.welcome_login' : 'auth.welcome_register')}
           </h1>
           <p className="auth-card__subtitle">
-            {isLoginMode
-              ? "Войди и продолжи работу над собой"
-              : "Начни бороться с прокрастинацией прямо сейчас"}
+         {t(isLoginMode ? 'auth.subtitle_login' : 'auth.subtitle_register')}
           </p>
         </header>
 
@@ -144,7 +143,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, theme, onToggleTheme }) =>
                 id="auth-name"
                 type="text"
                 className="form-input"
-                placeholder="Как к тебе обращаться?"
+                placeholder={t('auth.placeholder_name')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isLoading}
@@ -179,7 +178,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, theme, onToggleTheme }) =>
               id="auth-password"
               type="password"
               className="form-input"
-              placeholder="Минимум 6 символов"
+              placeholder={t('auth.placeholder_password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
@@ -194,16 +193,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, theme, onToggleTheme }) =>
             disabled={isLoading || !isFormValid}
           >
             {isLoading
-              ? "Загрузка..."
-              : isLoginMode
-                ? "Войти"
-                : "Зарегистрироваться"}
+    ? t('auth.status_loading')
+    : t(isLoginMode ? 'auth.btn_login' : 'auth.btn_register')
+  }
           </button>
         </form>
 
         <div className="auth-card__switch">
           <span className="auth-card__switch-text">
-            {isLoginMode ? "Нет аккаунта?" : "Уже есть аккаунт?"}
+            {t(isLoginMode ? 'auth.no_account' : 'auth.already_have_account')}
           </span>
           <button
             type="button"
@@ -211,7 +209,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, theme, onToggleTheme }) =>
             onClick={toggleMode}
             disabled={isLoading}
           >
-            {isLoginMode ? "Зарегистрироваться" : "Войти"}
+            {t(isLoginMode ? 'auth.switch_to_register' : 'auth.switch_to_login')}
           </button>
         </div>
       </div>

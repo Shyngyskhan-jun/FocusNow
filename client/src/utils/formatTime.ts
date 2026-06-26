@@ -14,10 +14,10 @@ export function formatSeconds(totalSeconds: number): string {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-export function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Доброе утро';
-  if (h >= 12 && h < 18) return 'Добрый день';
-  if (h >= 18 && h < 23) return 'Добрый вечер';
-  return 'Доброй ночи';
-}
+export const getGreeting = (): string => {
+  const hrs = new Date().getHours();
+  if (hrs >= 5 && hrs < 12) return "greeting.morning";
+  if (hrs >= 12 && hrs < 17) return "greeting.afternoon";
+  if (hrs >= 17 && hrs < 22) return "greeting.evening";
+  return "greeting.night";
+};

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next"; // Импортируем хук перевода
 import { apiFetch } from "../services/api";
 import { formatMinutes, getGreeting } from "../utils/formatTime";
 import { isSameDay } from "../utils/formatDate";
@@ -20,6 +21,8 @@ const parseMinutes = (val: unknown): number => {
 };
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation(); // Инициализируем t()
+  
   const [stats, setStats] = useState<DashboardStats>({
     focusMinutesToday: 0,
     activeTasks: 0,
@@ -28,7 +31,8 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const userName = localStorage.getItem("focusnow_user_name") ?? "Студент";
+  // Если в localStorage нет имени, берем локализованную дефолтную строку "Студент" / "Student"
+  const userName = localStorage.getItem("focusnow_user_name") ?? t("dashboard.user_default");
 
   useEffect(() => {
     let alive = true;
@@ -43,7 +47,6 @@ const Dashboard: React.FC = () => {
         if (!alive) return;
 
         const today = new Date();
-
         const activeTasks = tasks.filter((t) => !t.completed).length;
 
         const completedToday = tasks.filter((t) => {
@@ -62,7 +65,7 @@ const Dashboard: React.FC = () => {
         });
         setError("");
       } catch {
-        if (alive) setError("Ошибка загрузки данных");
+        if (alive) setError(t("dashboard.error_load")); // Локализованная ошибка
       } finally {
         if (alive) setLoading(false);
       }
@@ -70,57 +73,59 @@ const Dashboard: React.FC = () => {
 
     load();
     return () => { alive = false; };
-  }, []);
+  }, [t]);
 
   const progress = Math.min(
     100,
     Math.round((stats.focusMinutesToday / DAILY_GOAL_MINUTES) * 100)
   );
 
-  if (loading) return <p className="empty-state">Загрузка...</p>;
+  if (loading) return <p className="empty-state">{t("dashboard.loading")}</p>;
 
   return (
     <section className="dashboard">
       <div className="dashboard__top">
         <div>
           <h1>
-            {getGreeting()}, {userName} 👋
+            {/* Рендерим приветствие по динамическому ключу и подставляем имя */}
+            {t(getGreeting())}, {userName} 👋
           </h1>
-          <p className="muted">Твоя продуктивность сегодня</p>
+          <p className="muted">{t("dashboard.subtitle")}</p>
         </div>
       </div>
 
       {error && <div className="error">{error}</div>}
 
       <div className="focus-card">
-        <div className="focus-time">{formatMinutes(stats.focusMinutesToday)}</div>
-        <p className="muted">сегодня в фокусе</p>
+        <div className="focus-time">{parseInt(formatMinutes(stats.focusMinutesToday), 10)} {t('minutes_short')}</div>
+        <p className="muted">{t("dashboard.focus_today")}</p>
 
         <div className="progress">
           <div className="progress__fill" style={{ width: `${progress}%` }} />
         </div>
         <span className="progress__text">
-          {progress}% от цели ({DAILY_GOAL_MINUTES / 60} ч)
+          {/* Передаем переменные для интерполяции в строку прогресса */}
+          {t("dashboard.goal_text", { percent: progress, hours: DAILY_GOAL_MINUTES / 60 })}
         </span>
       </div>
 
       <div className="stats-grid">
         <div className="stat">
           <span>{stats.completedToday}</span>
-          <p>выполнено сегодня</p>
+          <p>{t("dashboard.completed_today")}</p>
         </div>
         <div className="stat">
           <span>{stats.activeTasks}</span>
-          <p>активных задач</p>
+          <p>{t("dashboard.active_tasks")}</p>
         </div>
       </div>
 
       <div className="actions">
         <Link to="/focus" className="btn btn--primary btn--block">
-          🚀 Фокус
+          {t("dashboard.btn_focus")}
         </Link>
         <Link to="/tasks" className="btn btn--outline btn--block">
-          📋 Задачи
+          {t("dashboard.btn_tasks")}
         </Link>
       </div>
     </section>

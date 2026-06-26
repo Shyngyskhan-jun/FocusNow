@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../services/api";
 import "../styles/focus.css";
-
+import { useTranslation } from "react-i18next";
 const DEFAULT_FOCUS_MINUTES = 25;
 
 const BLOCKED_SITES_STORAGE_KEY = "focusnow_blocked_sites";
@@ -17,14 +17,14 @@ type MoodValue = "tired" | "normal" | "energized";
 
 const MOODS: Array<{
   value: MoodValue;
-  label: string;
+  label: string; // Здесь теперь будут лежать ключи локализации
   emoji: string;
-  hint: string;
+  hint: string;  // И здесь тоже
 }> = [
-    { value: "tired", label: "Устал", emoji: "😴", hint: "Мало энергии" },
-    { value: "normal", label: "Нормально", emoji: "😐", hint: "Можно работать" },
-    { value: "energized", label: "Энергично", emoji: "⚡", hint: "Полный заряд" },
-  ];
+  { value: "tired", label: "mood.tired.label", emoji: "😴", hint: "mood.tired.hint" },
+  { value: "normal", label: "mood.normal.label", emoji: "😐", hint: "mood.normal.hint" },
+  { value: "energized", label: "mood.energized.label", emoji: "⚡", hint: "mood.energized.hint" },
+];
 
 const canUseNotifications = (): boolean => {
   return typeof window !== "undefined" && "Notification" in window;
@@ -158,6 +158,8 @@ const showBrowserNotification = (title: string, body: string) => {
 };
 
 const FocusSessionsPage: React.FC = () => {
+  const { t } = useTranslation();
+
   const [focusMinutes, setFocusMinutes] = useState<number>(() =>
     getStoredNumber(FOCUS_MINUTES_STORAGE_KEY, DEFAULT_FOCUS_MINUTES)
   );
@@ -181,7 +183,6 @@ const FocusSessionsPage: React.FC = () => {
     if (getStoredBool(TIMER_RUNNING_STORAGE_KEY, false) && initialEndTime) {
       return Math.max(0, Math.floor((initialEndTime - Date.now()) / 1000));
     }
-
     return getStoredNumber(FOCUS_MINUTES_STORAGE_KEY, DEFAULT_FOCUS_MINUTES) * 60;
   });
 
@@ -206,6 +207,7 @@ const FocusSessionsPage: React.FC = () => {
     setStatusMessage("");
   }, []);
 
+  // Логирование поведения (Аналитика прокрастинации)
   const logBehavior = useCallback(async (actionType: "delay" | "quit") => {
     try {
       await apiFetch("/behavior", {
@@ -220,6 +222,7 @@ const FocusSessionsPage: React.FC = () => {
     }
   }, []);
 
+  // Сохранение успешной сессии в БД
   const saveSessionToDB = useCallback(
     async (minutes: number) => {
       try {
@@ -232,17 +235,16 @@ const FocusSessionsPage: React.FC = () => {
           }),
         });
 
-        showStatus(
-          `Отлично! ${minutes} мин фокуса сохранены в статистику 🎉`
-        );
+        showStatus(t("focus.status_saved", { minutes }));
       } catch (error) {
         console.error("Ошибка при сохранении сессии:", error);
-        showError("Не удалось сохранить сессию в базу данных.");
+        showError(t("focus.error_save"));
       }
     },
-    [selectedMood, showError, showStatus]
+    [selectedMood, showError, showStatus, t]
   );
 
+  // Синхронизация стейта с LocalStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem(BLOCKED_SITES_STORAGE_KEY, JSON.stringify(blockedSites));
@@ -260,7 +262,6 @@ const FocusSessionsPage: React.FC = () => {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     if (endTime !== null) {
       localStorage.setItem(TIMER_END_STORAGE_KEY, String(endTime));
     } else {
@@ -273,13 +274,11 @@ const FocusSessionsPage: React.FC = () => {
     localStorage.setItem(TIMER_RUNNING_STORAGE_KEY, String(isRunning));
   }, [isRunning]);
 
+  // Вычисление оставшегося времени при изменении дедлайна таймера
   useEffect(() => {
-    if (endTime === null) {
-      return; //тут была ошибка исправлена уже
-    }
+    if (endTime === null) return;
 
     const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-
     if (remaining <= 0) {
       setTimeLeft(0);
       setIsRunning(false);
@@ -291,6 +290,7 @@ const FocusSessionsPage: React.FC = () => {
     setIsRunning(true);
   }, [endTime, focusMinutes]);
 
+  // Хэндлер тиков каждую секунду (Interval)
   useEffect(() => {
     if (!isRunning || endTime === null) {
       if (intervalRef.current !== null) {
@@ -317,6 +317,7 @@ const FocusSessionsPage: React.FC = () => {
     };
   }, [isRunning, endTime]);
 
+  // Триггер завершения фокус сессии
   useEffect(() => {
     if (timeLeft !== 0 || isRunning) return;
     if (sessionSavedRef.current) return;
@@ -324,25 +325,20 @@ const FocusSessionsPage: React.FC = () => {
     sessionSavedRef.current = true;
     setEndTime(null);
 
-    const pomodoroNotifyEnabled = getStoredBool(
-      POMODORO_NOTIFY_STORAGE_KEY,
-      true
-    );
+    const pomodoroNotifyEnabled = getStoredBool(POMODORO_NOTIFY_STORAGE_KEY, true);
 
     if (pomodoroNotifyEnabled) {
-      showBrowserNotification(
-        "Фокус-сессия завершена",
-        "Можно сделать перерыв ☕"
-      );
+      showBrowserNotification(t("focus.notification_title"), t("focus.notification_body"));
       playBeep();
     }
 
     void saveSessionToDB(focusMinutes);
-  }, [timeLeft, isRunning, saveSessionToDB, focusMinutes]);
+  }, [timeLeft, isRunning, saveSessionToDB, focusMinutes, t]);
 
+  // Обновление вкладки браузера (Document Title)
   useEffect(() => {
     document.title = isRunning
-      ? `${formatTime(timeLeft)} — Фокус | FocusNow`
+      ? `${formatTime(timeLeft)} — FocusNow`
       : "FocusNow";
 
     return () => {
@@ -355,34 +351,37 @@ const FocusSessionsPage: React.FC = () => {
     [blockedSites]
   );
 
+  // Добавление сайта в черный список
   const handleAddBlockedSite = useCallback(() => {
     const site = normalizeSite(newSite);
     if (!site) return;
 
     if (blockedSitesList.includes(site)) {
-      showError("Этот сайт уже есть в списке");
+      showError(t("focus.error_site_exists"));
       return;
     }
 
     setBlockedSites((prev) => [...prev, site]);
     setNewSite("");
-    showStatus(`Сайт ${site} добавлен в список`);
-  }, [newSite, blockedSitesList, showError, showStatus]);
+    showStatus(t("focus.status_site_added", { site }));
+  }, [newSite, blockedSitesList, showError, showStatus, t]);
 
+  // Удаление сайта из черного списка
   const handleRemoveSite = useCallback(
     (siteToRemove: string) => {
       setBlockedSites((prev) => prev.filter((site) => site !== siteToRemove));
-      showStatus(`Сайт ${siteToRemove} удалён из списка`);
+      showStatus(t("focus.status_site_removed", { site: siteToRemove }));
     },
-    [showStatus]
+    [showStatus, t]
   );
 
+  // Запуск или Пауза таймера
   const handleStartPause = useCallback(async () => {
     if (isRunning) {
       setEndTime(null);
       setIsRunning(false);
       await logBehavior("delay");
-      showStatus("Сессия поставлена на паузу");
+      showStatus(t("focus.status_paused"));
       return;
     }
 
@@ -405,9 +404,10 @@ const FocusSessionsPage: React.FC = () => {
       }
     }
 
-    showStatus("Фокус-сессия запущена");
-  }, [isRunning, timeLeft, sessionTime, logBehavior, showStatus]);
+    showStatus(t("focus.status_started"));
+  }, [isRunning, timeLeft, sessionTime, logBehavior, showStatus, t]);
 
+  // Сброс таймера
   const handleReset = useCallback(async () => {
     const hadActiveSession = isRunning || timeLeft < sessionTime;
 
@@ -428,16 +428,14 @@ const FocusSessionsPage: React.FC = () => {
       <header className="focus-page__header">
         <div>
           <p className="section-label">Pomodoro</p>
-          <h1 className="focus-page__title">Фокус-сессия</h1>
-          <p className="focus-page__subtitle">
-            Никаких отвлечений. Только ты и твоя задача.
-          </p>
+          <h1 className="focus-page__title">{t("focus.title")}</h1>
+          <p className="focus-page__subtitle">{t("focus.subtitle")}</p>
         </div>
 
         <div className="focus-page__badge">
-          {selectedMood === "tired" && "😴 Устал"}
-          {selectedMood === "normal" && "😐 Нормально"}
-          {selectedMood === "energized" && "⚡ Энергично"}
+          {selectedMood === "tired" && t("focus.badge_tired")}
+          {selectedMood === "normal" && t("focus.badge_normal")}
+          {selectedMood === "energized" && t("focus.badge_energized")}
         </div>
       </header>
 
@@ -451,10 +449,11 @@ const FocusSessionsPage: React.FC = () => {
       )}
 
       <div className="focus-grid">
+        {/* Карточка таймера */}
         <div className="focus-card focus-card--timer card">
           <div className="focus-card__head">
-            <h3>Таймер</h3>
-            <span className="badge">Сохраняется в статистику</span>
+            <h3>{t("focus.timer_title")}</h3>
+            <span className="badge">{t("focus.timer_stat_notice")}</span>
           </div>
 
           <div className="timer-display" aria-live="polite">
@@ -462,7 +461,7 @@ const FocusSessionsPage: React.FC = () => {
           </div>
 
           <div className="timer-subtext">
-            {isRunning ? "Сессия идёт" : timeLeft === sessionTime ? "Готов к старту" : "На паузе"}
+            {isRunning ? t("focus.timer_running") : timeLeft === sessionTime ? t("focus.timer_ready") : t("focus.timer_paused")}
           </div>
 
           <div className="timer-progress">
@@ -478,28 +477,23 @@ const FocusSessionsPage: React.FC = () => {
           </div>
 
           <div className="timer-controls">
-            <button
-              className="btn btn--primary btn--lg"
-              onClick={handleStartPause}
-              type="button"
-            >
-              {isRunning ? "Пауза" : timeLeft === sessionTime ? "Начать" : "Продолжить"}
+            <button className="btn btn--primary btn--lg" onClick={handleStartPause} type="button">
+              {isRunning ? t("focus.btn_pause") : timeLeft === sessionTime ? t("focus.btn_start") : t("focus.btn_continue")}
             </button>
 
-            <button
-              className="btn btn--ghost btn--lg"
-              onClick={handleReset}
-              type="button"
-            >
-              Сброс
+            <button className="btn btn--ghost btn--lg" onClick={handleReset} type="button">
+              {t("focus.btn_reset")}
             </button>
           </div>
         </div>
 
+        {/* Настройка длительности */}
         <div className="focus-card card">
           <div className="focus-card__head">
-            <h3>Длительность</h3>
-            <span className="focus-card__meta">{focusMinutes} мин</span>
+            <h3>{t("focus.duration_title")}</h3>
+            <span className="focus-card__meta">
+              {focusMinutes} {t("minutes_short")}
+            </span>
           </div>
 
           <input
@@ -516,12 +510,11 @@ const FocusSessionsPage: React.FC = () => {
               }
             }}
           />
-          <div className="focus-card__hint">
-            Настрой удобный интервал под задачу.
-          </div>
+          <div className="focus-card__hint">{t("focus.duration_hint")}</div>
 
+          {/* Селектор настроения */}
           <div className="mood-selector">
-            <h3>Состояние перед началом</h3>
+            <h3>{t("focus.mood_title")}</h3>
             <div className="mood-selector__grid">
               {MOODS.map((mood) => (
                 <button
@@ -534,8 +527,8 @@ const FocusSessionsPage: React.FC = () => {
                     {mood.emoji}
                   </span>
                   <span className="mood-chip__text">
-                    <strong>{mood.label}</strong>
-                    <small>{mood.hint}</small>
+                    <strong>{t(mood.label)}</strong>
+                    <small>{t(mood.hint)}</small>
                   </span>
                 </button>
               ))}
@@ -544,13 +537,12 @@ const FocusSessionsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Список отвлечений */}
       <div className="focus-card card">
         <div className="focus-card__head">
           <div>
-            <h3>Список отвлечений</h3>
-            <p className="focus-card__hint">
-              Пока это локальный список для будущей блокировки и аналитики.
-            </p>
+            <h3>{t("focus.distractions_title")}</h3>
+            <p className="focus-card__hint">{t("focus.distractions_hint")}</p>
           </div>
         </div>
 
@@ -558,7 +550,7 @@ const FocusSessionsPage: React.FC = () => {
           <input
             type="text"
             className="form-input"
-            placeholder="Например, vk.com"
+            placeholder={t("focus.distractions_placeholder")}
             value={newSite}
             onChange={(e) => setNewSite(e.target.value)}
             onKeyDown={(e) => {
@@ -574,7 +566,7 @@ const FocusSessionsPage: React.FC = () => {
             onClick={handleAddBlockedSite}
             disabled={!normalizeSite(newSite)}
           >
-            Добавить
+            {t("focus.distractions_btn_add")}
           </button>
         </div>
 
@@ -586,8 +578,8 @@ const FocusSessionsPage: React.FC = () => {
                 type="button"
                 className="btn btn--ghost btn--sm blocked-item__remove"
                 onClick={() => handleRemoveSite(site)}
-                aria-label={`Удалить ${site} из списка`}
-                title="Удалить"
+                aria-label={`Remove ${site} from list`}
+                title={t("focus.btn_reset")} // Используем универсальный "Сброс/Удалить" или добавь ключ
               >
                 ✕
               </button>
@@ -595,7 +587,7 @@ const FocusSessionsPage: React.FC = () => {
           ))}
 
           {blockedSitesList.length === 0 && (
-            <li className="blocked-empty">Список пуст.</li>
+            <li className="blocked-empty">{t("focus.distractions_empty")}</li>
           )}
         </ul>
       </div>

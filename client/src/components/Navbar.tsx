@@ -1,26 +1,29 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import '../styles/navbar.css';
+import { LangSwitcher } from './LangSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export interface NavbarProps {
   onLogout: () => void;
 }
 
 const NAV_ITEMS = [
-  { path: '/dashboard', label: 'Главная',    icon: '🏠' },
-  { path: '/tasks',     label: 'Задачи',     icon: '📋' },
-  { path: '/focus',     label: 'Фокус',      icon: '⏱' },
-  { path: '/stats',     label: 'Статистика', icon: '📊' },
-  { path: '/profile',   label: 'Профиль',    icon: '👤' },
-  { path: '/analysis',  label: 'Анализ',     icon: '🧠' },
-  { path: '/settings',  label: 'Настройки',  icon: '⚙️' },
-];
+  { path: '/dashboard', keyki: 'nav_main', icon: '🏠' },
+  { path: '/tasks',     keyki: 'nav_tasks',     icon: '📋' },
+  { path: '/focus',     keyki: 'nav_focus',     icon: '⏱' },
+  { path: '/stats',     keyki: 'nav_stats',     icon: '📊' },
+  { path: '/profile',   keyki: 'nav_profile',   icon: '👤' },
+  { path: '/analysis',  keyki: 'nav_analysis',  icon: '🧠' },
+  { path: '/settings',  keyki: 'nav_settings',  icon: '⚙️' },
+] as const;
 
 const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const burgerRef = useRef<HTMLButtonElement | null>(null);
   const location = useLocation();
+  const { t } = useTranslation();
 
   const toggleMenu = useCallback(() => setIsOpen(prev => !prev), []);
   const closeMenu  = useCallback(() => setIsOpen(false), []);
@@ -102,7 +105,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
         <nav
           className="navbar-nav"
           id="main-navigation"
-          aria-label="Основная навигация"
+          aria-label={t('nav_main')}
         >
           {NAV_ITEMS.map(item => (
             <NavLink
@@ -115,19 +118,22 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
               <span className="nav-link__icon" aria-hidden="true">
                 {item.icon}
               </span>
-              <span className="nav-link__label">{item.label}</span>
+              <span className="nav-link__label">{t(item.keyki)}</span>
             </NavLink>
           ))}
         </nav>
-
+         
+         <LangSwitcher/>
         {/* Desktop logout */}
         <button
           onClick={handleLogout}
           className="btn btn--ghost btn--sm navbar-logout"
           aria-label="Выйти из аккаунта"
         >
-          Выйти
+          {t('logout')}
         </button>
+
+      
 
         {/* Burger */}
         <button
@@ -162,7 +168,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
               <span className="mobile-nav-link__icon" aria-hidden="true">
                 {item.icon}
               </span>
-              <span>{item.label}</span>
+              <span>{t(item.keyki)}</span>
             </NavLink>
           ))}
         </nav>
@@ -176,7 +182,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLogout }) => {
           </button>
         </div>
       </div>
-
+      
       {/* Overlay */}
       {isOpen && (
         <div
