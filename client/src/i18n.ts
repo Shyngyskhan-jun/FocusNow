@@ -14,11 +14,16 @@ i18n
   .init({
     fallbackLng: 'ru', // Если язык не найден, включаем русский
     debug: false,      // Поставь true, если захочешь видеть логи загрузки в консоли браузера
-
+    keySeparator: false,
+    nsSeparator: false,
     backend: {
       // Путь, откуда плагин будет забирать файлы перевода.
       // {{lng}} автоматически заменится на 'ru' или 'en', а {{ns}} на 'translation'
-      loadPath: '/src/locales/{{lng}}/{{ns}}.json',
+
+      // for local
+    //   loadPath: '/src/locales/{{lng}}/{{ns}}.json', 
+      loadPath: '/locales/{{lng}}/{{ns}}.json',
+      // for vercel
     },
 
     interpolation: {
