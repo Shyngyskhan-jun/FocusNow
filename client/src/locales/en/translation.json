@@ -1,6 +1,6 @@
 {
   "Moto": "Say no to procrastination!",
-  "main_text": "Focusnow - stop procrastinating today",
+  "hero.main_text": "Focusnow — <purple>stop procrastinating</purple> today",
   "desc": "An application that helps you focus, manage tasks, and fight procrastination using analytics and gamification.",
   "begin": "Get Started",
   "Oppr": "Explore features",
@@ -328,7 +328,7 @@
   "analysis.plan.step_4": "4. Mark completion status and repeat.",
   "analysis.plan.btn_open_tasks": "Open tasks",
   "analysis.plan.btn_start_timer": "Start timer",
-  
+
   "settings.header.label": "Settings",
   "settings.header.title": "App Management",
   "settings.header.subtitle": "Appearance, notifications, and account logout",

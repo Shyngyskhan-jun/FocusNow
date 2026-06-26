@@ -4,7 +4,7 @@ import "../styles/landing.css";
 import { LangSwitcher } from "../components/LangSwitcher";
 import { useTranslation } from 'react-i18next';
 type Theme = "light" | "dark";
-
+import { Trans } from 'react-i18next';
 interface LandingPageProps {
   theme: Theme;
   onToggleTheme: () => void;
@@ -144,7 +144,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ theme, onToggleTheme }) => {
           </div>
 
           <h1 className="lp-hero__title">
-            {t('main_text','Focusnow - перестань откладывать задачи уже сегодня')}
+            <Trans 
+    i18nKey="hero.main_text"
+    components={{ 
+      purple: <span className="text-purple" /> 
+    }}/>
 
           </h1>
 
