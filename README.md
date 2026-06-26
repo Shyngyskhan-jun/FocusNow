@@ -1,5 +1,32 @@
 # FocusNow
 
+Application against procrastination: tasks, Pomodoro timer, analytics.
+
+## ENG
+
+## Stack
+Frontend: React 19, TypeScript, Vite, React Router
+Backend: Node.js, Express, PostgreSQL, JWT
+Mobile: Capacitor (in development)
+## Run (local)
+1. Database
+Install PostgreSQL
+Create database: CREATE DATABASE focusnow;
+Run init_db.sql via pgAdmin or psql
+2. Server
+cd server cp .env.example .env # fill in the data npm install npm run dev # run on port 5000
+
+3. The client
+cd client cp .env.example .env # VITE_API_URL=http://localhost:5000/api npm install npm run dev # run on port 5173
+
+## Structure of the project
+client/ — React frontend server/ — Express API init_db.sql — SQL script for creating tables
+
+## Deploy
+Backend: Railway (environment variables from .env) Database: Railway PostgreSQL (DATABASE_URL) Frontend: Vercel or Railway
+
+## RU
+
 Приложение против прокрастинации: задачи, Pomodoro-таймер, аналитика.
 
 ## Стек
